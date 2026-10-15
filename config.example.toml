@@ -1,0 +1,133 @@
+# agent-memory configuration (TOML). NO SECRETS here: the MCP token lives in its own 600 file (mcp_token_file).
+# Default location: ~/.config/agent-memory/config.toml (override with --config or $AGENT_MEMORY_CONFIG).
+# install.sh writes a filled-in copy of this file; every option below shows its default value.
+# Paths accept "~". Paths left empty ("") are derived from base_dir.
+
+# ---------------------------------------------------------------- storage
+# Root folder for the database, INDEX.md, the embedding model and the LLM work dir.
+base_dir = "~/.local/share/agent-memory"
+# SQLite database (raw messages + FTS5 + sqlite-vec). Default: <base_dir>/data/memory.db
+db_path = ""
+# Generated memory index (<=150 lines), served at GET /index. Default: <base_dir>/INDEX.md
+index_path = ""
+# Embedding model cache (~470 MB, downloaded once). Default: <base_dir>/models
+models_dir = ""
+# Working directory of the LLM CLI during consolidation (must stay empty of .claude config). Default: <base_dir>/work
+work_dir = ""
+# Where remote machines upload transcripts (PUT /inbox/...). Default: <base_dir>/inbox
+# To ingest uploads, also list this folder in a [[claude_sources]] block (see the end of the file).
+inbox_dir = ""
+
+# ---------------------------------------------------------------- locale
+# IANA timezone used for local dates ("what did we do yesterday?") and for every time shown.
+timezone = "UTC"
+# Language of what the user reads: summaries, proposals, INDEX.md headings and the `agent-memory day` view.
+# Supported: "en", "es". Prompts to the model and MCP tool output are always English.
+language = "en"
+# How prompts refer to the human and to the agent (e.g. "Sam", "Helper").
+user_name = "the user"
+assistant_name = "the assistant"
+
+# ---------------------------------------------------------------- embeddings (local, CPU, ONNX via fastembed)
+# Multilingual model trained for query->passage retrieval. Changing it requires a new database (dimension).
+embedding_model = "intfloat/multilingual-e5-small"
+embedding_dim = 384
+
+# ---------------------------------------------------------------- optional read-only Markdown vault
+# Folder of Markdown notes (e.g. an Obsidian vault). Empty = disabled. Never written, moved or deleted.
+# Its notes are the canonical source of the facts layer.
+vault_path = ""
+# Folders skipped inside the vault.
+vault_exclude_dirs = [".git", ".obsidian", ".trash", ".stfolder"]
+# Globs (relative to the vault) of notes that are NOT canonical (agent logs, archive): treated as ordinary notes.
+vault_noncanonical = []
+# Notes bigger than this are skipped.
+vault_max_file_kb = 512
+
+# ---------------------------------------------------------------- exclusions and secrets
+# Session ids never ingested (including their subagents).
+exclude_sessions = []
+# Folder names under a Claude Code projects root that are never ingested. Add the folder Claude Code creates for
+# work_dir (its absolute path with "/" and "." replaced by "-") so consolidation calls are not ingested.
+exclude_projects = []
+# File with "sha256 length" lines of literal secrets to redact everywhere (made with scripts/make-literal-hashes.py;
+# it never contains the secrets themselves). Optional. Default: <base_dir>/config/literal-secrets.sha256
+literal_secrets_file = ""
+
+# ---------------------------------------------------------------- MCP server
+# Bind address. 127.0.0.1 (default) or a private-network IP (LAN, WireGuard, Tailscale 100.64.0.0/10).
+# 0.0.0.0, :: and public addresses are refused at startup.
+host = "127.0.0.1"
+port = 8765
+# Extra Host headers accepted (DNS-rebinding protection), e.g. ["myserver:8765", "myserver"] when clients use a
+# hostname instead of the IP.
+allowed_hosts = []
+# Bearer token file (600). Created by `agent-memory init-token` (install.sh does it). Default:
+# <base_dir>/config/mcp-token
+mcp_token_file = ""
+# Maximum size of one uploaded transcript (PUT /inbox/...).
+upload_max_mb = 64
+
+# ---------------------------------------------------------------- facts brief (GET /facts/brief)
+# Character budget per section of the block injected at session start.
+facts_core_chars = 500
+facts_recent_chars = 450
+facts_context_chars = 350
+# "Recent" = became true in the last N days. Project facts unused for N days drop out of the injection.
+facts_recent_days = 7
+facts_decay_days = 21
+# Categories never injected (still available through facts() and search()).
+facts_brief_excluded = ["health"]
+
+# ---------------------------------------------------------------- nightly consolidation (LLM)
+# Default backend: Claude Code CLI, `claude -p --model <llm_model>` (uses the CLI's own login; no API key).
+# Use an absolute path if the service PATH does not include it (install.sh fills it in).
+claude_bin = "claude"
+llm_model = "haiku"
+# Alternative backend: any command that reads "system prompt + prompt" on stdin and prints the reply on stdout,
+# e.g. ["ollama", "run", "llama3.1:8b"]. Empty = use claude_bin.
+llm_command = []
+# Seconds per LLM call.
+llm_timeout = 600
+# Maximum LLM calls per run for summaries (the rest is done the next night).
+max_llm_calls = 80
+# A session is summarized once it has been idle this long.
+session_idle_minutes = 30
+# Sources whose sessions are summarized and mined for facts: "claude" and/or "openclaw".
+consolidate_sources = ["claude", "openclaw"]
+# Facts extraction: LLM calls per run (vault notes / conversation days) and complete days looked back.
+facts_max_calls = 3
+facts_vault_max_calls = 2
+facts_days_back = 2
+
+# ---------------------------------------------------------------- optional self-learning
+# Nightly proposals of preferences, skills and personality tweaks (stored in the approval queue:
+# `agent-memory proposals pending`). Off by default.
+self_learning = false
+# Folder with PREFERENCES.md, PERSONALITY.md and skills/<name>/SKILL.md, read as context (read-only).
+profile_dir = ""
+proposals_max_calls = 3
+proposals_days_back = 2
+
+# ---------------------------------------------------------------- sizes
+# Messages longer than this are truncated before storing; only the first embed_chars are embedded.
+max_message_chars = 50000
+embed_chars = 2000
+
+# ---------------------------------------------------------------- sources (TOML tables: keep them at the end)
+# Claude Code transcripts (JSONL). Also the generic input format for any agent: see docs/INGESTION.md.
+# [[claude_sources]]
+# path = "~/.claude/projects"
+# machine = "local"          # free label stored with every message
+#
+# Transcripts uploaded by other machines through PUT /inbox/... (same path as inbox_dir):
+# [[claude_sources]]
+# path = "~/.local/share/agent-memory/inbox"
+# machine = "remote"
+
+# OpenClaw agent transcripts (reads <path>/<agent>/sessions/*.jsonl). See docs/OPENCLAW.md.
+# [[openclaw_sources]]
+# path = "~/.openclaw/agents"
+# machine = "openclaw"
+# agents = []                # empty = every agent folder
+# primary_agents = ["main"]  # agents a human talks to directly (others need a sender envelope or a short text)

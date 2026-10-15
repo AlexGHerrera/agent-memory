@@ -1,0 +1,30 @@
+[project]
+name = "agent-memory"
+version = "0.1.0"
+description = "Long-term memory for AI agents: SQLite + FTS5 + sqlite-vec, local embeddings, MCP server with 5 tools"
+readme = "README.md"
+license = { text = "MIT" }
+requires-python = ">=3.11"
+dependencies = [
+    "fastembed>=0.8,<0.9",
+    "sqlite-vec>=0.1.9",
+    "mcp>=1.20,<2",
+    "numpy",
+    "uvicorn",
+]
+
+[project.optional-dependencies]
+test = ["pytest"]
+
+[project.scripts]
+agent-memory = "agent_memory.cli:main"
+
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools]
+packages = ["agent_memory"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests", "hooks/claude-code/tests"]

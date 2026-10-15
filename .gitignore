@@ -1,0 +1,18 @@
+__pycache__/
+*.py[cod]
+*.egg-info/
+build/
+dist/
+.venv/
+venv/
+.pytest_cache/
+# runtime data must never be committed
+*.db
+*.db-wal
+*.db-shm
+mcp-token
+literal-secrets.sha256
+config.toml
+INDEX.md
+models/
+inbox/

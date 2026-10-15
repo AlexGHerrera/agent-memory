@@ -1,0 +1,14 @@
+# Template rendered by install.sh (@...@ placeholders).
+[Unit]
+Description=agent-memory: incremental ingestion of every source + embeddings
+
+[Service]
+Type=oneshot
+Environment=AGENT_MEMORY_CONFIG=@CONFIG@
+Environment=HF_HUB_OFFLINE=1
+ExecStart=@BIN@/agent-memory ingest
+Nice=10
+IOSchedulingClass=idle
+UMask=0077
+NoNewPrivileges=true
+TimeoutStartSec=2h

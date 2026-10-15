@@ -1,0 +1,18 @@
+# Template rendered by install.sh (@...@ placeholders).
+# Runs the LLM CLI (default `claude -p --model haiku`): it needs the login state of the user it runs as.
+[Unit]
+Description=agent-memory: nightly consolidation (summaries, facts, INDEX.md)
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+Environment=AGENT_MEMORY_CONFIG=@CONFIG@
+Environment=HF_HUB_OFFLINE=1
+Environment=PATH=@PATH@
+ExecStartPre=@BIN@/agent-memory ingest
+ExecStart=@BIN@/agent-memory consolidate
+Nice=10
+UMask=0077
+NoNewPrivileges=true
+TimeoutStartSec=4h

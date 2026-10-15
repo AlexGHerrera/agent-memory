@@ -1,0 +1,11 @@
+[Unit]
+Description=agent-memory: incremental ingestion every 15 minutes
+
+[Timer]
+OnBootSec=3min
+OnCalendar=*:0/15
+Persistent=true
+RandomizedDelaySec=30
+
+[Install]
+WantedBy=timers.target

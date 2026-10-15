@@ -1,0 +1,19 @@
+# Template rendered by install.sh (@...@ placeholders). User unit by default; system mode adds the drop-ins.
+[Unit]
+Description=agent-memory: MCP server (streamable HTTP, Bearer token)
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+Environment=AGENT_MEMORY_CONFIG=@CONFIG@
+Environment=HF_HUB_OFFLINE=1
+ExecStart=@BIN@/agent-memory serve
+# If a private-network IP is not up yet at boot, the bind fails and is retried
+Restart=always
+RestartSec=10
+UMask=0077
+NoNewPrivileges=true
+
+[Install]
+WantedBy=@WANTEDBY@
